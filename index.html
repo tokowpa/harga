@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cek Harga - WPA SHOP</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4caf50">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 15px; background: #f7f7f7; margin: 0; color: #333; }
+    h1 { text-align: center; color: #2e7d32; margin-bottom: 5px; font-size: 24px; }
+    p.subtitle { text-align: center; color: #666; margin-top: 0; margin-bottom: 20px; font-size: 14px; }
+    
+    .container { max-width: 600px; margin: 0 auto; }
+    
+    /* Kotak Pencarian */
+    .search-box { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
+    .search-box label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; color: #444; }
+    .search-box input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; outline: none; }
+    .search-box input:focus { border-color: #4caf50; box-shadow: 0 0 5px rgba(76,175,80,0.3); }
+
+    /* Tabel Produk */
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    th, td { border: 1px solid #eee; padding: 12px 10px; text-align: left; }
+    th { background: #4caf50; color: white; font-size: 14px; }
+    tr:nth-child(even) { background: #fcfcfc; }
+    tr:hover { background: #f1f8f1; }
+    
+    .harga-tampil { font-size: 16px; font-weight: bold; color: #2e7d32; white-space: nowrap; }
+    .badge { padding: 3px 6px; border-radius: 4px; color: #fff; font-size: 11px; margin-right: 4px; display: inline-block; margin-top: 2px; }
+    .badge-ecer { background: #4caf50; } 
+    .badge-karton { background: #2196f3; } 
+    .badge-slop { background: #ff9800; }
+    .badge-pak { background: #9c27b0; } 
+    .badge-sak { background: #795548; } 
+    .badge-bal { background: #607d8b; } 
+
+    .info-status { text-align: center; padding: 20px; color: #777; font-style: italic; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+    /* Notifikasi */
+    .notif-container { position: fixed; top: 16px; right: 16px; z-index: 10001; display: flex; flex-direction: column; gap: 10px; pointer-events: none; max-width: calc(100% - 32px); }
+    .notif { pointer-events: auto; min-width: 220px; max-width: 420px; padding: 12px 14px; border-radius: 8px; color: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.12); opacity: 0; transform: translateY(-8px); animation: notifIn 250ms ease forwards; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .notif.error { background: linear-gradient(90deg,#f44336,#e53935); }
+    .notif.success { background: linear-gradient(90deg,#4caf50,#43a047); }
+    @keyframes notifIn { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  </style>
+</head>
+<body>
+
+<!-- 1. KOTAK LOGIN / MASUKKAN KODE DITARUH DI SINI (Paling atas) -->
+<div id="authBox" style="background: #fff; padding: 20px; border-radius: 8px; max-width: 400px; margin: 40px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center;">
+  <h2>🔒 Masukkan Kode Nota</h2>
+  <p style="font-size: 13px; color: #666;">Lihat kode masuk pada bagian bawah nota belanjaan Anda dari WPA SHOP.</p>
+  
+  <input type="text" id="inputKode" placeholder="Masukkan Kode (Cth: WPA789)" style="width: 100%; padding: 12px; font-size: 16px; text-align: center; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; text-transform: uppercase;">
+  
+  <button onclick="verifikasiKode()" style="width: 100%; padding: 12px; background: #4caf50; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;">Masuk Cek Harga</button>
+</div>
+
+
+<!-- 2. KONTEN UTAMA CEK HARGA DIBUNGKUS DI DALAM DIV INI -->
+<div id="mainCekHarga" style="display: none;">
+  <div class="container">
+    <h1>🔍 Cek Harga Produk</h1>
+    <p class="subtitle">WPA SHOP GROSIR - Silakan ketik nama barang atau scan barcode</p>
+
+    <!-- Kolom Pencarian -->
+    <div class="search-box">
+      <label for="inputCari">Cek Produk / Scan Barcode</label>
+      <input type="text" id="inputCari" placeholder="Ketik nama atau scan di sini..." autofocus>
+    </div>
+
+    <!-- Tabel Hasil Pencarian -->
+    <div id="wrapperTabel">
+      <table id="tabelHarga">
+        <thead>
+          <tr>
+            <th>Nama Produk</th>
+            <th>Varian & Harga</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="2" class="info-status">Silakan masukkan kode nota terlebih dahulu...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="notif-container" id="notifContainer" aria-live="polite"></div>
+
+<!-- 3. SKRIP FIREBASE & LOGIKA VERIFIKASI KODE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, getDoc, doc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsz5Y-7PsulS71Z_TiPWbBW3qiMkYFI1g",
+    authDomain: "wpashopgrosir-45a9d.firebaseapp.com",
+    projectId: "wpashopgrosir-45a9d",
+    storageBucket: "wpashopgrosir-45a9d.firebasestorage.app",
+    messagingSenderId: "978499317395",
+    appId: "1:978499317395:web:91fccc4e5193022f29a766"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let produkDB = [];
+
+  // Fungsi verifikasi kode yang dihubungkan langsung ke Firebase
+  window.verifikasiKode = async function() {
+    const inputUser = document.getElementById('inputKode').value.trim().toUpperCase();
+    
+    if (!inputUser) {
+      alert("Harap masukkan kode dari nota!");
+      return;
+    }
+
+    try {
+      // Mengambil kode aktif langsung dari Firestore collection "settings", document "app_config"
+      const docRef = doc(db, "settings", "app_config");
+      const docSnap = await getDoc(docRef);
+
+      let kodeServer = "WPA789"; // Kode cadangan jika dokumen belum dibuat di Firebase
+      if (docSnap.exists()) {
+        kodeServer = String(docSnap.data().kode_akses || "").trim().toUpperCase();
+      }
+
+      if (inputUser === kodeServer) {
+        document.getElementById('authBox').style.display = 'none';
+        document.getElementById('mainCekHarga').style.display = 'block';
+        
+        // Setelah berhasil masuk, baru muat data produk dari database
+        muatDataProduk();
+      } else {
+        alert("Kode salah atau sudah kedaluwarsa! Silakan lihat kode terbaru di nota belanja.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Gagal memverifikasi kode. Periksa koneksi internet.");
+    }
+  }
+
+  // Fungsi memuat produk (sama seperti sebelumnya)
+  async function muatDataProduk() {
+    const kemungkinanCollection = ["products", "produk", "data_barang", "barang", "item"];
+    let querySnapshot = null;
+
+    for (let namaCol of kemungkinanCollection) {
+      try {
+        const snapshot = await getDocs(collection(db, namaCol));
+        if (!snapshot.empty) {
+          querySnapshot = snapshot;
+          break;
+        }
+      } catch (e) {}
+    }
+
+    try {
+      if (!querySnapshot) {
+        querySnapshot = await getDocs(collection(db, "products"));
+      }
+
+      produkDB = [];
+      querySnapshot.forEach((doc) => {
+        produkDB.push({ id: doc.id, ...doc.data() });
+      });
+
+      renderTabel("");
+    } catch (error) {
+      document.querySelector("#tabelHarga tbody").innerHTML = `<tr><td colspan="2" class="info-status" style="color: #d32f2f;">Gagal memuat produk.</td></tr>`;
+    }
+  }
+
+  function renderTabel(filter = "") {
+    const tbody = document.querySelector("#tabelHarga tbody");
+    tbody.innerHTML = "";
+
+    if (produkDB.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="2" class="info-status">Belum ada produk di database.</td></tr>`;
+      return;
+    }
+
+    const filterLower = filter.toLowerCase().trim();
+    const produkTampil = produkDB.filter(p => {
+      if (filterLower === "") return true;
+      const namaCocok = String(p.nama || "").toLowerCase().includes(filterLower);
+      const barcodeCocok = p.barcode && String(p.barcode).includes(filterLower);
+      const varianCocok = p.variasi && p.variasi.some(v => (v.nama && String(v.nama).toLowerCase().includes(filterLower)) || (v.barcode && String(v.barcode).includes(filterLower)));
+      return namaCocok || barcodeCocok || varianCocok;
+    });
+
+    if (produkTampil.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="2" class="info-status">Produk tidak ditemukan.</td></tr>`;
+      return;
+    }
+
+    produkTampil.forEach(produk => {
+      let varianHtml = '<div style="display: flex; flex-direction: column; gap: 6px;">';
+      
+      const bulkKeys = [
+        { key: 'karton', label: 'Karton', badge: 'badge-karton' },
+        { key: 'slop', label: 'slop', badge: 'badge-slop' },
+        { key: 'pak', label: 'pak', badge: 'badge-pak' },
+        { key: 'sak', label: 'sak', badge: 'badge-sak' },
+        { key: 'bal', label: 'bal', badge: 'badge-bal' }
+      ];
+
+      // Hanya melooping harga grosir/bulk
+      bulkKeys.forEach(bk => {
+        if (produk[bk.key] > 0) {
+          varianHtml += `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #eee; padding-bottom: 4px;">
+            <span><span class="badge ${bk.badge}">${bk.label}</span></span>
+            <span class="harga-tampil">Rp ${new Intl.NumberFormat('id-ID').format(produk[bk.key])}</span>
+          </div>`;
+        }
+      });
+
+      // Bagian produk.variasi / ecer sengaja dilewati/dihapus agar tidak tampil
+
+      varianHtml += '</div>';
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight: bold; vertical-align: top; width: 45%;">
+          ${produk.nama || 'Tanpa Nama'}
+          ${produk.isi ? `<br><small style="color: #666; font-weight: normal;">Isi: ${produk.isi}</small>` : ''}
+        </td>
+        <td style="vertical-align: top; width: 55%;">${varianHtml}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('inputCari').addEventListener('input', (e) => {
+    renderTabel(e.target.value);
+  });
+</script>
+
+</body>
+</html>
